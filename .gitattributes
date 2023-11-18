@@ -1,1 +1,7 @@
-##src/* export-ignore
+src/* export-ignore
+package.json export-ignore
+package-lock.json export-ignore
+build.js export-ignore
+LICENSE.md export-ignore
+tool.bat export-ignore
+docs/* export-ignore
