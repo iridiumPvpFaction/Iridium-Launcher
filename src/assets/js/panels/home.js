@@ -328,23 +328,23 @@ class Home {
         let Web = document.querySelector('.social-web');
 
         Youtube.addEventListener('click', () => {
-            openExternalUrl("https://www.youtube.com/@iridium-pvpfactionoffici-oo9zz");
+            openExternalUrl(this.config.youtube);
         });
         
         Twitter.addEventListener('click', () => {
-            openExternalUrl("https://iridiumpvp.fr");
+            openExternalUrl(this.config.twitter);
         });
 
         Instagram.addEventListener('click', () => {
-            openExternalUrl("https://iridiumpvp.fr");
+            openExternalUrl(this.config.insta);
         });
         
         Discord.addEventListener('click', () => {
-            openExternalUrl("https://discord.gg/hG6rDEVs7X");
+            openExternalUrl(this.config.discord);
         });
 
         Web.addEventListener('click', () => {
-            openExternalUrl("https://iridiumpvp.fr");
+            openExternalUrl(this.config.web);
         });
     }
 
@@ -359,19 +359,19 @@ class Home {
         let shopDiv1 = document.querySelector('.shopdiv1');
         let shopDiv2 = document.querySelector('.shopdiv2');
 
-        imageArticle1.src = "https://www.iridiumpvp.fr/storage/packages/c5OHcE5sX4uNMuxzk1qZKyJIxCrNuXo01xtPShQK.png";
-        imageArticle2.src = "https://www.iridiumpvp.fr/storage/packages/HbMcA69J3xr8XG9oS5HWZp4UzzifUR1zC2ozdWn5.png";
-        nameArticle1.textContent = "Grade Indium";
-        nameArticle2.textContent = "Lucky Block";
-        prixArticle1.textContent = "1000 Coins";
-        prixArticle2.textContent = "32 Coins/u";
+        imageArticle1.src = this.config.article_1_icon;
+        imageArticle2.src = this.config.article_2_icon;
+        nameArticle1.textContent = this.config.article_1_name;
+        nameArticle2.textContent = this.config.article_2_name;
+        prixArticle1.textContent = this.config.article_1_price;
+        prixArticle2.textContent = this.config.article_2_price;
 
         shopDiv1.addEventListener('click', () => {
-            require('electron').shell.openExternal("https://www.iridiumpvp.fr/shop/categories/grades2");
+            require('electron').shell.openExternal(this.config.article_1_link);
         });
         
         shopDiv2.addEventListener('click', () => {
-            require('electron').shell.openExternal("https://www.iridiumpvp.fr/shop/categories/lucky-blocks");
+            require('electron').shell.openExternal(this.config.article_2_link);
         });
     }
 }
