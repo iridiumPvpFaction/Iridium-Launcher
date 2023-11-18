@@ -5,3 +5,5 @@ test
 dist
 node-v*
 AppData
+*.zip
+*.tar.gz
