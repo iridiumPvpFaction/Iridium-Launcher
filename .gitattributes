@@ -1,4 +1,1 @@
-# Auto detect text files and perform LF normalization
-* text=auto
-*.zip export-ignore
-*.tar.gz export-ignore
+src/* export-ignore
