@@ -1,10 +1,11 @@
 name: Launcher Build
+
 on:
   push:
     branches: [ main ]
 
 jobs:
-  create-release:
+  create-release-draft:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -12,20 +13,19 @@ jobs:
 
       - name: Get version
         run: echo "version=$(jq -r .version package.json)" >> $GITHUB_ENV
-      
-      - name: Create Release
-        id: create_release
-        uses: actions/create-draft@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.version }}
-          release_name: release ${{ env.version }}
-          draft: false
-          prerelease: ${{ contains(env.version, 'beta') || contains(env.version, 'alpha') }}
+
+      - name: Create Release Draft
+        id: create_release_draft
+        run: |
+          response=$(curl -X POST -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases" \
+            -d "{\"tag_name\": \"${{ env.version }}\", \"name\": \"release ${{ env.version }}\", \"draft\": true}")
+          release_id=$(echo "$response" | jq -r .id)
+          echo "release_id=$release_id" >> $GITHUB_ENV
 
   build-launcher:
-    needs: create-release
+    needs: create-release-draft
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -55,3 +55,26 @@ jobs:
           GH_TOKEN: ${{ secrets.github_token }}
         run: npm run build
         shell: bash
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-artifact
+          path: path/to/your/artifact
+
+  finalize-release-draft:
+    needs: build-launcher
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get release_id
+        run: echo "release_id=$(cat $GITHUB_ENV | grep release_id | cut -d'=' -f2)" >> $GITHUB_ENV
+
+      - name: Publish Release Draft
+        run: |
+          curl -X PATCH -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$release_id" \
+            -d '{"draft": false}'
