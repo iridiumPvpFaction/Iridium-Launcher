@@ -1,0 +1,48 @@
+{
+    "name": "iridium-launcher",
+    "preductname": "Iridium Launcher",
+    "version": "2.3.3",
+    "description": "Iridium Pvp Faction Server Launcher",
+    "main": "src/app.js",
+    "author": "Shykaruu_",
+    "update-win": "https://download.iridiumpvp.fr/launcherV2/iridium-installer-win-x64.exe",
+    "settings": "https://download.iridiumpvp.fr/launcherV2/panel",
+    "engines": {
+        "node": "16.x.x"
+    },
+    "scripts": {
+        "start": "cross-env-shell NODE_ENV=dev electron .",
+        "build": "node build.js",
+        "dev": "nodemon --exec npm start",
+        "dist": "electron-builder build",
+        "dist:win": "npm run dist -- -w",
+        "dist:mac": "npm run dist -- -m",
+        "dist:linux": "npm run dist -- -l"
+    },
+    "license": "CC0",
+    "nodemonConfig": {
+        "ext": "js,html,css"
+    },
+    "dependencies": {
+        "axios": "^1.6.2",
+        "discord-rpc": "^4.0.1",
+        "electron-updater": "^6.1.4",
+        "https": "^1.0.0",
+        "minecraft-folder-path": "^1.2.0",
+        "minecraft-java-core": "^3.8.1",
+        "minecraft-loader": "^1.3.0",
+        "node-fetch": "^2.6.7",
+        "nw-autoupdater-luuxis": "^1.1.6",
+        "xml-js": "^1.6.11"
+    },
+    "devDependencies": {
+        "cross-env": "^7.0.3",
+        "electron": "^22.3.24",
+        "electron-builder": "^24.6.4",
+        "nodemon": "^2.0.16"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/iridiumPvpFaction/Iridium-Launcher.git"
+    }
+}
