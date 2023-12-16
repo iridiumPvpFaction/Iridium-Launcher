@@ -280,18 +280,6 @@ class Login {
                     },
                     
                 }
-                const minecraftFolderPath = require("minecraft-folder-path");
-                let iridiumFolderPath = minecraftFolderPath;
-                iridiumFolderPath = iridiumFolderPath.replace("minecraft", "iridium");
-                iridiumFolderPath = iridiumFolderPath + "/auth.infos";
-                fs.writeFile(iridiumFolderPath, account.access_token, (err) => {
-                    if (err) {
-                        console.error('Erreur lors de la sauvegarde du fichier :', err);
-                    } else {
-                        console.log('Le texte a été sauvegardé avec succès dans', filePath);
-                    }
-                }); 
-
                 this.database.add(account, 'accounts')
                 this.database.update({ uuid: "1234", selected: account.uuid }, 'accounts-selected');
 
@@ -308,6 +296,18 @@ class Login {
                 passwordInput.disabled = false;
                 loginBtn.style.display = "block";
                 infoLogin.innerHTML = "&nbsp;";
+                
+                const minecraftFolderPath = require("minecraft-folder-path");
+                let iridiumFolderPath = minecraftFolderPath;
+                iridiumFolderPath = iridiumFolderPath.replace("minecraft", "iridium");
+                iridiumFolderPath = iridiumFolderPath + "/auth.infos";
+                fs.writeFile(iridiumFolderPath, account.access_token, (err) => {
+                    if (err) {
+                        console.error('Erreur lors de la sauvegarde du fichier :', err);
+                    } else {
+                        console.log('Le texte a été sauvegardé avec succès dans', filePath);
+                    }
+                }); 
             }).catch(err => {
                 console.log(err);
                 cancelMojangBtn.disabled = false;
