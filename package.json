@@ -1,7 +1,7 @@
 {
     "name": "iridium-launcher",
     "preductname": "Iridium Launcher",
-    "version": "5.2.4",
+    "version": "5.2.6",
     "description": "Iridium Pvp Faction Server Launcher",
     "main": "src/app.js",
     "author": "Shykaruu_",
