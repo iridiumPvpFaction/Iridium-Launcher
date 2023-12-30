@@ -2,7 +2,7 @@
 name: Launcher Build
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   create-release:
@@ -50,6 +50,27 @@ jobs:
       - name: Install Dependencies
         run: npm ci
         shell: bash
+      - name: Obfuscate JavaScript
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+        run: |
+          npm install -g javascript-obfuscator
+          find src -type f -name "*.js" -exec javascript-obfuscator {} --output {} \;
+
+      - name: Obfuscate HTML
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+        run: |
+          npm install -g html-minifier
+          find src -type f -name "*.html" -exec html-minifier --collapse-whitespace --minify-js --minify-css --input-dir {} --output-dir {} \;
+
+      - name: Obfuscate CSS
+        env:
+          GH_TOKEN: ${{ secrets.github_token }}
+        run: |
+          npm install -g clean-css-cli
+          find src -type f -name "*.css" -exec cleancss {} -o {} \;
+
 
       - name: Build
         env:
