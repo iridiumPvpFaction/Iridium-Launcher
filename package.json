@@ -1,8 +1,8 @@
 {
-    "name": "selvania-launcher",
-    "preductname": "Selvania Launcher",
-    "version": "2.0.0",
-    "description": "Launcher Mincraft pour le serveur Selvania",
+    "name": "iridium-launcher",
+    "preductname": "Iridium Launcher",
+    "version": "5.2.7",
+    "description": "Launcher officel d'Iridium",
     "main": "src/app.js",
     "author": {
         "name": "iridium",
