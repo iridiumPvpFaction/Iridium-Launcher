@@ -1,1 +1,257 @@
-import e from"./panels/login.js";import t from"./panels/home.js";import a from"./panels/settings.js";import{logger as n,config as i,changePanel as o,database as c,popup as l,setBackground as s,accountSelect as r,addAccount as d,pkg as u}from"./utils.js";let{AZauth:m,Microsoft:h,Mojang:g}=require("minecraft-java-core"),{ipcRenderer:p}=require("electron"),fs=require("fs");class Launcher{async init(){if(this.initLog(),console.log("Initializing Launcher..."),this.shortcut(),await s(),"win32"==process.platform&&this.initFrame(),this.config=await i.GetConfig().then(e=>e).catch(e=>e),await this.config.error)return this.errorConnect();this.db=new c,await this.initConfigClient(),this.createPanels(e,t,a),this.startLauncher()}initLog(){document.addEventListener("keydown",e=>{(e.ctrlKey&&e.shiftKey&&73==e.keyCode||123==e.keyCode)&&(p.send("main-window-dev-tools-close"),p.send("main-window-dev-tools"))}),new n(u.name,"#7289da")}shortcut(){document.addEventListener("keydown",e=>{e.ctrlKey&&87==e.keyCode&&p.send("main-window-close")})}errorConnect(){new l().openPopup({title:this.config.error.code,content:this.config.error.message,color:"red",exit:!0,options:!0})}initFrame(){console.log("Initializing Frame..."),document.querySelector(".frame").classList.toggle("hide"),document.querySelector(".dragbar").classList.toggle("hide"),document.querySelector("#minimize").addEventListener("click",()=>{p.send("main-window-minimize")});let e=!1,t=document.querySelector("#maximize");t.addEventListener("click",()=>{p.send("main-window-maximize"),e=!e,t.classList.toggle("icon-maximize"),t.classList.toggle("icon-restore-down")}),document.querySelector("#close").addEventListener("click",()=>{p.send("main-window-close")})}async initConfigClient(){console.log("Initializing Config Client...");await this.db.readData("configClient")||await this.db.createData("configClient",{account_selected:null,instance_selct:null,java_config:{java_path:null,java_memory:{min:2,max:4}},game_config:{screen_size:{width:854,height:480}},launcher_config:{download_multi:5,theme:"auto",closeLauncher:"close-launcher",intelEnabledMac:!0}})}createPanels(...e){let t=document.querySelector(".panels");for(let a of e){console.log(`Initializing ${a.name} Panel...`);let n=document.createElement("div");n.classList.add("panel",a.id),n.innerHTML=fs.readFileSync(`${__dirname}/panels/${a.id}.html`,"utf8"),t.appendChild(n),new a().init(this.config)}}async startLauncher(){let e=await this.db.readAllData("accounts"),t=await this.db.readData("configClient"),a=t?t.account_selected:null,n=new l;if(e?.length){for(let c of e){let s=c.ID;if(c.error){await this.db.deleteData("accounts",s);continue}if("Xbox"===c.meta.type){console.log(`Account Type: ${c.meta.type} | Username: ${c.name}`),n.openPopup({title:"Connexion",content:`Refresh account Type: ${c.meta.type} | Username: ${c.name}`,color:"var(--color)",background:!1});let u=await new h(this.config.client_id).refresh(c);if(u.error){await this.db.deleteData("accounts",s),s==a&&(t.account_selected=null,await this.db.updateData("configClient",t)),console.error(`[Account] ${c.name}: ${u.errorMessage}`);continue}u.ID=s,await this.db.updateData("accounts",u,s),await d(u),s==a&&r(u)}else if("AZauth"==c.meta.type){console.log(`Account Type: ${c.meta.type} | Username: ${c.name}`),n.openPopup({title:"Connexion",content:`Refresh account Type: ${c.meta.type} | Username: ${c.name}`,color:"var(--color)",background:!1});let p=await new m(this.config.online).verify(c);if(p.error){this.db.deleteData("accounts",s),s==a&&(t.account_selected=null,this.db.updateData("configClient",t)),console.error(`[Account] ${c.name}: ${p.message}`);continue}p.ID=s,this.db.updateData("accounts",p,s),await d(p),s==a&&r(p)}else if("Mojang"==c.meta.type){if(console.log(`Account Type: ${c.meta.type} | Username: ${c.name}`),n.openPopup({title:"Connexion",content:`Refresh account Type: ${c.meta.type} | Username: ${c.name}`,color:"var(--color)",background:!1}),!1==c.meta.online){let f=await g.login(c.name);f.ID=s,await d(f),this.db.updateData("accounts",f,s),s==a&&r(f);continue}let w=await g.refresh(c);if(w.error){this.db.deleteData("accounts",s),s==a&&(t.account_selected=null,this.db.updateData("configClient",t)),console.error(`[Account] ${c.name}: ${w.errorMessage}`);continue}w.ID=s,this.db.updateData("accounts",w,s),await d(w),s==a&&r(w)}else console.error(`[Account] ${c.name}: Account Type Not Found`),this.db.deleteData("accounts",s),s==a&&(t.account_selected=null,this.db.updateData("configClient",t))}if(e=await this.db.readAllData("accounts"),!(a=(t=await this.db.readData("configClient"))?t.account_selected:null)){let y=e[0].ID;y&&(t.account_selected=y,await this.db.updateData("configClient",t),r(y))}if(!e.length)return i.account_selected=null,await this.db.updateData("configClient",i),n.closePopup(),o("login");n.closePopup(),o("home")}else n.closePopup(),o("login")}}new Launcher().init();
+import Login from './panels/login.js';
+import Home from './panels/home.js';
+import Settings from './panels/settings.js';
+
+import { logger, config, changePanel, database, popup, setBackground, accountSelect, addAccount, pkg } from './utils.js';
+const { AZauth, Microsoft, Mojang } = require('minecraft-java-core');
+
+const { ipcRenderer } = require('electron');
+const fs = require('fs');
+
+class Launcher {
+    async init() {
+        this.initLog();
+        console.log('Initializing Launcher...');
+        this.shortcut()
+        await setBackground()
+        if (process.platform == 'win32') this.initFrame();
+        this.config = await config.GetConfig().then(res => res).catch(err => err);
+        if (await this.config.error) return this.errorConnect()
+        this.db = new database();
+        await this.initConfigClient();
+        this.createPanels(Login, Home, Settings);
+        this.startLauncher();
+    }
+
+    initLog() {
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 73 || e.keyCode == 123) {
+                ipcRenderer.send('main-window-dev-tools-close');
+                ipcRenderer.send('main-window-dev-tools');
+            }
+        })
+        new logger(pkg.name, '#7289da')
+    }
+
+    shortcut() {
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && e.keyCode == 87) {
+                ipcRenderer.send('main-window-close');
+            }
+        })
+    }
+
+
+    errorConnect() {
+        new popup().openPopup({
+            title: this.config.error.code,
+            content: this.config.error.message,
+            color: 'red',
+            exit: true,
+            options: true
+        });
+    }
+
+    initFrame() {
+        console.log('Initializing Frame...')
+        document.querySelector('.frame').classList.toggle('hide')
+        document.querySelector('.dragbar').classList.toggle('hide')
+
+        document.querySelector('#minimize').addEventListener('click', () => {
+            ipcRenderer.send('main-window-minimize');
+        });
+
+        let maximized = false;
+        let maximize = document.querySelector('#maximize')
+        maximize.addEventListener('click', () => {
+            if (maximized) ipcRenderer.send('main-window-maximize')
+            else ipcRenderer.send('main-window-maximize');
+            maximized = !maximized
+            maximize.classList.toggle('icon-maximize')
+            maximize.classList.toggle('icon-restore-down')
+        });
+
+        document.querySelector('#close').addEventListener('click', () => {
+            ipcRenderer.send('main-window-close');
+        })
+    }
+
+    async initConfigClient() {
+        console.log('Initializing Config Client...')
+        let configClient = await this.db.readData('configClient')
+
+        if (!configClient) {
+            await this.db.createData('configClient', {
+                account_selected: null,
+                instance_selct: null,
+                java_config: {
+                    java_path: null,
+                    java_memory: {
+                        min: 2,
+                        max: 4
+                    }
+                },
+                game_config: {
+                    screen_size: {
+                        width: 854,
+                        height: 480
+                    }
+                },
+                launcher_config: {
+                    download_multi: 5,
+                    theme: 'auto',
+                    closeLauncher: 'close-launcher',
+                    intelEnabledMac: true
+                }
+            })
+        }
+    }
+
+    createPanels(...panels) {
+        let panelsElem = document.querySelector('.panels')
+        for (let panel of panels) {
+            console.log(`Initializing ${panel.name} Panel...`);
+            let div = document.createElement('div');
+            div.classList.add('panel', panel.id)
+            div.innerHTML = fs.readFileSync(`${__dirname}/panels/${panel.id}.html`, 'utf8');
+            panelsElem.appendChild(div);
+            new panel().init(this.config);
+        }
+    }
+
+    async startLauncher() {
+        let accounts = await this.db.readAllData('accounts')
+        let configClient = await this.db.readData('configClient')
+        let account_selected = configClient ? configClient.account_selected : null
+        let popupRefresh = new popup();
+
+        if (accounts?.length) {
+            for (let account of accounts) {
+                let account_ID = account.ID
+                if (account.error) {
+                    await this.db.deleteData('accounts', account_ID)
+                    continue
+                }
+                if (account.meta.type === 'Xbox') {
+                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
+                    popupRefresh.openPopup({
+                        title: 'Connexion',
+                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
+                        color: 'var(--color)',
+                        background: false
+                    });
+
+                    let refresh_accounts = await new Microsoft(this.config.client_id).refresh(account);
+
+                    if (refresh_accounts.error) {
+                        await this.db.deleteData('accounts', account_ID)
+                        if (account_ID == account_selected) {
+                            configClient.account_selected = null
+                            await this.db.updateData('configClient', configClient)
+                        }
+                        console.error(`[Account] ${account.name}: ${refresh_accounts.errorMessage}`);
+                        continue;
+                    }
+
+                    refresh_accounts.ID = account_ID
+                    await this.db.updateData('accounts', refresh_accounts, account_ID)
+                    await addAccount(refresh_accounts)
+                    if (account_ID == account_selected) accountSelect(refresh_accounts)
+                } else if (account.meta.type == 'AZauth') {
+                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
+                    popupRefresh.openPopup({
+                        title: 'Connexion',
+                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
+                        color: 'var(--color)',
+                        background: false
+                    });
+                    let refresh_accounts = await new AZauth(this.config.online).verify(account);
+
+                    if (refresh_accounts.error) {
+                        this.db.deleteData('accounts', account_ID)
+                        if (account_ID == account_selected) {
+                            configClient.account_selected = null
+                            this.db.updateData('configClient', configClient)
+                        }
+                        console.error(`[Account] ${account.name}: ${refresh_accounts.message}`);
+                        continue;
+                    }
+
+                    refresh_accounts.ID = account_ID
+                    this.db.updateData('accounts', refresh_accounts, account_ID)
+                    await addAccount(refresh_accounts)
+                    if (account_ID == account_selected) accountSelect(refresh_accounts)
+                } else if (account.meta.type == 'Mojang') {
+                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
+                    popupRefresh.openPopup({
+                        title: 'Connexion',
+                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
+                        color: 'var(--color)',
+                        background: false
+                    });
+                    if (account.meta.online == false) {
+                        let refresh_accounts = await Mojang.login(account.name);
+
+                        refresh_accounts.ID = account_ID
+                        await addAccount(refresh_accounts)
+                        this.db.updateData('accounts', refresh_accounts, account_ID)
+                        if (account_ID == account_selected) accountSelect(refresh_accounts)
+                        continue;
+                    }
+
+                    let refresh_accounts = await Mojang.refresh(account);
+
+                    if (refresh_accounts.error) {
+                        this.db.deleteData('accounts', account_ID)
+                        if (account_ID == account_selected) {
+                            configClient.account_selected = null
+                            this.db.updateData('configClient', configClient)
+                        }
+                        console.error(`[Account] ${account.name}: ${refresh_accounts.errorMessage}`);
+                        continue;
+                    }
+
+                    refresh_accounts.ID = account_ID
+                    this.db.updateData('accounts', refresh_accounts, account_ID)
+                    await addAccount(refresh_accounts)
+                    if (account_ID == account_selected) accountSelect(refresh_accounts)
+                } else {
+                    console.error(`[Account] ${account.name}: Account Type Not Found`);
+                    this.db.deleteData('accounts', account_ID)
+                    if (account_ID == account_selected) {
+                        configClient.account_selected = null
+                        this.db.updateData('configClient', configClient)
+                    }
+                }
+            }
+
+            accounts = await this.db.readAllData('accounts')
+            configClient = await this.db.readData('configClient')
+            account_selected = configClient ? configClient.account_selected : null
+
+            if (!account_selected) {
+                let uuid = accounts[0].ID
+                if (uuid) {
+                    configClient.account_selected = uuid
+                    await this.db.updateData('configClient', configClient)
+                    accountSelect(uuid)
+                }
+            }
+
+            if (!accounts.length) {
+                config.account_selected = null
+                await this.db.updateData('configClient', config);
+                popupRefresh.closePopup()
+                return changePanel("login");
+            }
+
+            popupRefresh.closePopup()
+            changePanel("home");
+        } else {
+            popupRefresh.closePopup()
+            changePanel('login');
+        }
+    }
+}
+
+new Launcher().init();

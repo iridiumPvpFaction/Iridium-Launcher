@@ -1,1 +1,66 @@
-let{NodeBDD:a,DataType:t}=require("node-bdd"),nodedatabase=new a,{ipcRenderer:e}=require("electron"),dev="dev"===process.env.NODE_ENV;class database{async creatDatabase(a,t){return await nodedatabase.intilize({databaseName:"Databases",fileType:"db",tableName:a,path:`${await e.invoke("path-user-data")}${dev?"../..":"/databases"}`,tableColumns:t})}async getDatabase(a){return await this.creatDatabase(a,{json_data:t.TEXT.TEXT})}async createData(a,t){let e=(t=await nodedatabase.createData(await this.getDatabase(a),{json_data:JSON.stringify(t)})).id;return(t=JSON.parse(t.json_data)).ID=e,t}async readData(a,t=1){let e=await nodedatabase.getDataById(await this.getDatabase(a),t);if(e){let s=e.id;(e=JSON.parse(e.json_data)).ID=s}return e||void 0}async readAllData(a){return(await nodedatabase.getAllData(await this.getDatabase(a))).map(a=>{let t=a.id;return(a=JSON.parse(a.json_data)).ID=t,a})}async updateData(a,t,e=1){await nodedatabase.updateData(await this.getDatabase(a),{json_data:JSON.stringify(t)},e)}async deleteData(a,t=1){await nodedatabase.deleteData(await this.getDatabase(a),t)}}export default database;
+const { NodeBDD, DataType } = require('node-bdd');
+const nodedatabase = new NodeBDD()
+const { ipcRenderer } = require('electron')
+
+let dev = process.env.NODE_ENV === 'dev';
+
+class database {
+    async creatDatabase(tableName, tableConfig) {
+        return await nodedatabase.intilize({
+            databaseName: 'Databases',
+            fileType: 'db',
+            tableName: tableName,
+            path: `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/databases'}`,
+            tableColumns: tableConfig,
+        });
+    }
+
+    async getDatabase(tableName) {
+        return await this.creatDatabase(tableName, {
+            json_data: DataType.TEXT.TEXT,
+        });
+    }
+
+    async createData(tableName, data) {
+        let table = await this.getDatabase(tableName);
+        data = await nodedatabase.createData(table, { json_data: JSON.stringify(data) })
+        let id = data.id
+        data = JSON.parse(data.json_data)
+        data.ID = id
+        return data
+    }
+
+    async readData(tableName, key = 1) {
+        let table = await this.getDatabase(tableName);
+        let data = await nodedatabase.getDataById(table, key)
+        if (data) {
+            let id = data.id
+            data = JSON.parse(data.json_data)
+            data.ID = id
+        }
+        return data ? data : undefined
+    }
+
+    async readAllData(tableName) {
+        let table = await this.getDatabase(tableName);
+        let data = await nodedatabase.getAllData(table)
+        return data.map(info => {
+            let id = info.id
+            info = JSON.parse(info.json_data)
+            info.ID = id
+            return info
+        })
+    }
+
+    async updateData(tableName, data, key = 1) {
+        let table = await this.getDatabase(tableName);
+        await nodedatabase.updateData(table, { json_data: JSON.stringify(data) }, key)
+    }
+
+    async deleteData(tableName, key = 1) {
+        let table = await this.getDatabase(tableName);
+        await nodedatabase.deleteData(table, key)
+    }
+}
+
+export default database;

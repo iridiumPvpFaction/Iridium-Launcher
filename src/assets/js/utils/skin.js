@@ -1,1 +1,5 @@
-import{skin2D as i}from"./Skin/skin2D.js";export{i as skin2D};
+import { skin2D } from './Skin/skin2D.js'
+
+export {
+    skin2D as skin2D
+}

@@ -1,1 +1,111 @@
-const{app:e,ipcMain:n,nativeTheme:o}=require("electron"),{Microsoft:d}=require("minecraft-java-core"),{autoUpdater:a}=require("electron-updater"),path=require("path"),fs=require("fs"),UpdateWindow=require("./assets/js/windows/updateWindow.js"),MainWindow=require("./assets/js/windows/mainWindow.js");let dev="dev"===process.env.NODE_ENV;if(dev){let i=path.resolve("./data/Launcher").replace(/\\/g,"/"),t=path.resolve("./data").replace(/\\/g,"/");fs.existsSync(i)||fs.mkdirSync(i,{recursive:!0}),fs.existsSync(t)||fs.mkdirSync(t,{recursive:!0}),e.setPath("userData",i),e.setPath("appData",t)}e.requestSingleInstanceLock()?e.whenReady().then(()=>{if(dev)return MainWindow.createWindow();UpdateWindow.createWindow()}):e.quit(),n.on("main-window-open",()=>MainWindow.createWindow()),n.on("main-window-dev-tools",()=>MainWindow.getWindow().webContents.openDevTools({mode:"detach"})),n.on("main-window-dev-tools-close",()=>MainWindow.getWindow().webContents.closeDevTools()),n.on("main-window-close",()=>MainWindow.destroyWindow()),n.on("main-window-reload",()=>MainWindow.getWindow().reload()),n.on("main-window-progress",(e,n)=>MainWindow.getWindow().setProgressBar(n.progress/n.size)),n.on("main-window-progress-reset",()=>MainWindow.getWindow().setProgressBar(-1)),n.on("main-window-progress-load",()=>MainWindow.getWindow().setProgressBar(2)),n.on("main-window-minimize",()=>MainWindow.getWindow().minimize()),n.on("update-window-close",()=>UpdateWindow.destroyWindow()),n.on("update-window-dev-tools",()=>UpdateWindow.getWindow().webContents.openDevTools({mode:"detach"})),n.on("update-window-progress",(e,n)=>UpdateWindow.getWindow().setProgressBar(n.progress/n.size)),n.on("update-window-progress-reset",()=>UpdateWindow.getWindow().setProgressBar(-1)),n.on("update-window-progress-load",()=>UpdateWindow.getWindow().setProgressBar(2)),n.handle("path-user-data",()=>e.getPath("userData")),n.handle("appData",n=>e.getPath("appData")),n.on("main-window-maximize",()=>{MainWindow.getWindow().isMaximized()?MainWindow.getWindow().unmaximize():MainWindow.getWindow().maximize()}),n.on("main-window-hide",()=>MainWindow.getWindow().hide()),n.on("main-window-show",()=>MainWindow.getWindow().show()),n.handle("Microsoft-window",async(e,n)=>await new d(n).getAuth()),n.handle("is-dark-theme",(e,n)=>"dark"===n||"light"!==n&&o.shouldUseDarkColors),e.on("window-all-closed",()=>e.quit()),a.autoDownload=!1,n.handle("update-app",async()=>await new Promise(async(e,n)=>{a.checkForUpdates().then(n=>{e(n)}).catch(e=>{n({error:!0,message:e})})})),a.on("update-available",()=>{let e=UpdateWindow.getWindow();e&&e.webContents.send("updateAvailable")}),n.on("start-update",()=>{a.downloadUpdate()}),a.on("update-not-available",()=>{let e=UpdateWindow.getWindow();e&&e.webContents.send("update-not-available")}),a.on("update-downloaded",()=>{a.quitAndInstall()}),a.on("download-progress",e=>{let n=UpdateWindow.getWindow();n&&n.webContents.send("download-progress",e)}),a.on("error",e=>{let n=UpdateWindow.getWindow();n&&n.webContents.send("error",e)});
+const { app, ipcMain, nativeTheme } = require('electron');
+const { Microsoft } = require('minecraft-java-core');
+const { autoUpdater } = require('electron-updater')
+
+const path = require('path');
+const fs = require('fs');
+
+const UpdateWindow = require("./assets/js/windows/updateWindow.js");
+const MainWindow = require("./assets/js/windows/mainWindow.js");
+
+let dev = process.env.NODE_ENV === 'dev';
+
+if (dev) {
+    let appPath = path.resolve('./data/Launcher').replace(/\\/g, '/');
+    let appdata = path.resolve('./data').replace(/\\/g, '/');
+    if (!fs.existsSync(appPath)) fs.mkdirSync(appPath, { recursive: true });
+    if (!fs.existsSync(appdata)) fs.mkdirSync(appdata, { recursive: true });
+    app.setPath('userData', appPath);
+    app.setPath('appData', appdata)
+}
+
+if (!app.requestSingleInstanceLock()) app.quit();
+else app.whenReady().then(() => {
+    if (dev) return MainWindow.createWindow()
+    UpdateWindow.createWindow()
+});
+
+ipcMain.on('main-window-open', () => MainWindow.createWindow())
+ipcMain.on('main-window-dev-tools', () => MainWindow.getWindow().webContents.openDevTools({ mode: 'detach' }))
+ipcMain.on('main-window-dev-tools-close', () => MainWindow.getWindow().webContents.closeDevTools())
+ipcMain.on('main-window-close', () => MainWindow.destroyWindow())
+ipcMain.on('main-window-reload', () => MainWindow.getWindow().reload())
+ipcMain.on('main-window-progress', (event, options) => MainWindow.getWindow().setProgressBar(options.progress / options.size))
+ipcMain.on('main-window-progress-reset', () => MainWindow.getWindow().setProgressBar(-1))
+ipcMain.on('main-window-progress-load', () => MainWindow.getWindow().setProgressBar(2))
+ipcMain.on('main-window-minimize', () => MainWindow.getWindow().minimize())
+
+ipcMain.on('update-window-close', () => UpdateWindow.destroyWindow())
+ipcMain.on('update-window-dev-tools', () => UpdateWindow.getWindow().webContents.openDevTools({ mode: 'detach' }))
+ipcMain.on('update-window-progress', (event, options) => UpdateWindow.getWindow().setProgressBar(options.progress / options.size))
+ipcMain.on('update-window-progress-reset', () => UpdateWindow.getWindow().setProgressBar(-1))
+ipcMain.on('update-window-progress-load', () => UpdateWindow.getWindow().setProgressBar(2))
+
+ipcMain.handle('path-user-data', () => app.getPath('userData'))
+ipcMain.handle('appData', e => app.getPath('appData'))
+
+ipcMain.on('main-window-maximize', () => {
+    if (MainWindow.getWindow().isMaximized()) {
+        MainWindow.getWindow().unmaximize();
+    } else {
+        MainWindow.getWindow().maximize();
+    }
+})
+
+ipcMain.on('main-window-hide', () => MainWindow.getWindow().hide())
+ipcMain.on('main-window-show', () => MainWindow.getWindow().show())
+
+ipcMain.handle('Microsoft-window', async (_, client_id) => {
+    return await new Microsoft(client_id).getAuth();
+})
+
+ipcMain.handle('is-dark-theme', (_, theme) => {
+    if (theme === 'dark') return true
+    if (theme === 'light') return false
+    return nativeTheme.shouldUseDarkColors;
+})
+
+app.on('window-all-closed', () => app.quit());
+
+autoUpdater.autoDownload = false;
+
+ipcMain.handle('update-app', async () => {
+    return await new Promise(async (resolve, reject) => {
+        autoUpdater.checkForUpdates().then(res => {
+            resolve(res);
+        }).catch(error => {
+            reject({
+                error: true,
+                message: error
+            })
+        })
+    })
+})
+
+autoUpdater.on('update-available', () => {
+    const updateWindow = UpdateWindow.getWindow();
+    if (updateWindow) updateWindow.webContents.send('updateAvailable');
+});
+
+ipcMain.on('start-update', () => {
+    autoUpdater.downloadUpdate();
+})
+
+autoUpdater.on('update-not-available', () => {
+    const updateWindow = UpdateWindow.getWindow();
+    if (updateWindow) updateWindow.webContents.send('update-not-available');
+});
+
+autoUpdater.on('update-downloaded', () => {
+    autoUpdater.quitAndInstall();
+});
+
+autoUpdater.on('download-progress', (progress) => {
+    const updateWindow = UpdateWindow.getWindow();
+    if (updateWindow) updateWindow.webContents.send('download-progress', progress);
+})
+
+autoUpdater.on('error', (err) => {
+    const updateWindow = UpdateWindow.getWindow();
+    if (updateWindow) updateWindow.webContents.send('error', err);
+});

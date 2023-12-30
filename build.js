@@ -1,1 +1,165 @@
-const{app:e,ipcMain:n,nativeTheme:o}=require("electron"),{Microsoft:d}=require("minecraft-java-core"),{autoUpdater:a}=require("electron-updater"),path=require("path"),fs=require("fs"),UpdateWindow=require("./assets/js/windows/updateWindow.js"),MainWindow=require("./assets/js/windows/mainWindow.js");let dev="dev"===process.env.NODE_ENV;if(dev){let i=path.resolve("./data/Launcher").replace(/\\/g,"/"),t=path.resolve("./data").replace(/\\/g,"/");fs.existsSync(i)||fs.mkdirSync(i,{recursive:!0}),fs.existsSync(t)||fs.mkdirSync(t,{recursive:!0}),e.setPath("userData",i),e.setPath("appData",t)}e.requestSingleInstanceLock()?e.whenReady().then(()=>{if(dev)return MainWindow.createWindow();UpdateWindow.createWindow()}):e.quit(),n.on("main-window-open",()=>MainWindow.createWindow()),n.on("main-window-dev-tools",()=>MainWindow.getWindow().webContents.openDevTools({mode:"detach"})),n.on("main-window-dev-tools-close",()=>MainWindow.getWindow().webContents.closeDevTools()),n.on("main-window-close",()=>MainWindow.destroyWindow()),n.on("main-window-reload",()=>MainWindow.getWindow().reload()),n.on("main-window-progress",(e,n)=>MainWindow.getWindow().setProgressBar(n.progress/n.size)),n.on("main-window-progress-reset",()=>MainWindow.getWindow().setProgressBar(-1)),n.on("main-window-progress-load",()=>MainWindow.getWindow().setProgressBar(2)),n.on("main-window-minimize",()=>MainWindow.getWindow().minimize()),n.on("update-window-close",()=>UpdateWindow.destroyWindow()),n.on("update-window-dev-tools",()=>UpdateWindow.getWindow().webContents.openDevTools({mode:"detach"})),n.on("update-window-progress",(e,n)=>UpdateWindow.getWindow().setProgressBar(n.progress/n.size)),n.on("update-window-progress-reset",()=>UpdateWindow.getWindow().setProgressBar(-1)),n.on("update-window-progress-load",()=>UpdateWindow.getWindow().setProgressBar(2)),n.handle("path-user-data",()=>e.getPath("userData")),n.handle("appData",n=>e.getPath("appData")),n.on("main-window-maximize",()=>{MainWindow.getWindow().isMaximized()?MainWindow.getWindow().unmaximize():MainWindow.getWindow().maximize()}),n.on("main-window-hide",()=>MainWindow.getWindow().hide()),n.on("main-window-show",()=>MainWindow.getWindow().show()),n.handle("Microsoft-window",async(e,n)=>await new d(n).getAuth()),n.handle("is-dark-theme",(e,n)=>"dark"===n||"light"!==n&&o.shouldUseDarkColors),e.on("window-all-closed",()=>e.quit()),a.autoDownload=!1,n.handle("update-app",async()=>await new Promise(async(e,n)=>{a.checkForUpdates().then(n=>{e(n)}).catch(e=>{n({error:!0,message:e})})})),a.on("update-available",()=>{let e=UpdateWindow.getWindow();e&&e.webContents.send("updateAvailable")}),n.on("start-update",()=>{a.downloadUpdate()}),a.on("update-not-available",()=>{let e=UpdateWindow.getWindow();e&&e.webContents.send("update-not-available")}),a.on("update-downloaded",()=>{a.quitAndInstall()}),a.on("download-progress",e=>{let n=UpdateWindow.getWindow();n&&n.webContents.send("download-progress",e)}),a.on("error",e=>{let n=UpdateWindow.getWindow();n&&n.webContents.send("error",e)});
+const fs = require("fs");
+
+const builder = require('electron-builder')
+const JavaScriptObfuscator = require('javascript-obfuscator');
+const nodeFetch = require('node-fetch')
+const png2icons = require('png2icons');
+const Jimp = require('jimp');
+
+const { preductname } = require('./package.json');
+
+class Index {
+    async init() {
+        this.obf = true
+        this.Fileslist = []
+        process.argv.forEach(async val => {
+            if (val.startsWith('--icon')) {
+                return this.iconSet(val.split('=')[1])
+            }
+
+            if (val.startsWith('--obf')) {
+                this.obf = JSON.parse(val.split('=')[1])
+                this.Fileslist = this.getFiles("src");
+            }
+
+            if (val.startsWith('--build')) {
+                let buildType = val.split('=')[1]
+                if (buildType == 'platform') return await this.buildPlatform()
+            }
+        });
+    }
+
+    async Obfuscate() {
+        if (fs.existsSync("./app")) fs.rmSync("./app", { recursive: true })
+
+        for (let path of this.Fileslist) {
+            let fileName = path.split('/').pop()
+            let extFile = fileName.split(".").pop()
+            let folder = path.replace(`/${fileName}`, '').replace('src', 'app')
+
+            if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true })
+
+            if (extFile == 'js') {
+                let code = fs.readFileSync(path, "utf8");
+                code = code.replace(/src\//g, 'app/');
+                if (this.obf) {
+                    await new Promise((resolve) => {
+                        console.log(`Obfuscate ${path}`);
+                        let obf = JavaScriptObfuscator.obfuscate(code, { optionsPreset: 'medium-obfuscation', disableConsoleOutput: false });
+                        resolve(fs.writeFileSync(`${folder}/${fileName}`, obf.getObfuscatedCode(), { encoding: "utf-8" }));
+                    })
+                } else {
+                    console.log(`Copy ${path}`);
+                    fs.writeFileSync(`${folder}/${fileName}`, code, { encoding: "utf-8" });
+                }
+            } else {
+                fs.copyFileSync(path, `${folder}/${fileName}`);
+            }
+        }
+    }
+
+    async buildPlatform() {
+        await this.Obfuscate();
+        builder.build({
+            config: {
+                generateUpdatesFilesForAllChannels: false,
+                appId: preductname,
+                productName: preductname,
+                copyright: 'Copyright © 2020-2024 Luuxis',
+                artifactName: "${productName}-${os}-${arch}.${ext}",
+                extraMetadata: { main: 'app/app.js' },
+                files: ["app/**/*", "package.json", "LICENSE.md"],
+                directories: { "output": "dist" },
+                compression: 'maximum',
+                asar: true,
+                publish: [{
+                    provider: "github",
+                    releaseType: 'release',
+                }],
+                win: {
+                    icon: "./app/assets/images/icon.ico",
+                    target: [{
+                        target: "nsis",
+                        arch: "x64"
+                    }]
+                },
+                nsis: {
+                    oneClick: true,
+                    allowToChangeInstallationDirectory: false,
+                    createDesktopShortcut: true,
+                    runAfterFinish: true
+                },
+                mac: {
+                    icon: "./app/assets/images/icon.icns",
+                    category: "public.app-category.games",
+                    identity: null,
+                    target: [{
+                        target: "dmg",
+                        arch: "x64"
+                    },
+                    {
+                        target: "zip",
+                        arch: "x64"
+                    },
+                    {
+                        target: "dmg",
+                        arch: "arm64"
+                    }, {
+                        target: "zip",
+                        arch: "arm64"
+                    }]
+                },
+                linux: {
+                    icon: "./app/assets/images/icon.png",
+                    target: [{
+                        target: "AppImage",
+                        arch: "x64"
+                    }, {
+                        target: "deb",
+                        arch: "x64"
+                    }, {
+                        target: "tar.gz",
+                        arch: "x64"
+                    }, {
+                        target: "zip",
+                        arch: "x64"
+                    }]
+                }
+            }
+        }).then(() => {
+            console.log('le build est terminé')
+        }).catch(err => {
+            console.error('Error during build!', err)
+        })
+    }
+
+    getFiles(path, file = []) {
+        if (fs.existsSync(path)) {
+            let files = fs.readdirSync(path);
+            if (files.length == 0) file.push(path);
+            for (let i in files) {
+                let name = `${path}/${files[i]}`;
+                if (fs.statSync(name).isDirectory()) this.getFiles(name, file);
+                else file.push(name);
+            }
+        }
+        return file;
+    }
+
+    async iconSet(url) {
+        let Buffer = await nodeFetch(url)
+        if (Buffer.status == 200) {
+            Buffer = await Buffer.buffer()
+            const image = await Jimp.read(Buffer);
+            Buffer = await image.resize(256, 256).getBufferAsync(Jimp.MIME_PNG)
+            fs.writeFileSync("src/assets/images/icon.icns", png2icons.createICNS(Buffer, png2icons.BILINEAR, 0));
+            fs.writeFileSync("src/assets/images/icon.ico", png2icons.createICO(Buffer, png2icons.HERMITE, 0, false));
+            fs.writeFileSync("src/assets/images/icon.png", Buffer);
+            console.log('new icon set')
+        } else {
+            console.log('connection error')
+        }
+    }
+}
+
+new Index().init();

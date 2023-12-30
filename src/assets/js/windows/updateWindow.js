@@ -1,1 +1,48 @@
-"use strict";const{app:e,BrowserWindow:o,Menu:t}=require("electron"),path=require("path"),os=require("os");let dev="open"===process.env.DEV_TOOL,updateWindow;function getWindow(){return updateWindow}function destroyWindow(){updateWindow&&(updateWindow.close(),updateWindow=void 0)}function createWindow(){destroyWindow(),updateWindow=new o({title:"Mise \xe0 jour",width:400,height:500,resizable:!1,icon:`./src/assets/images/icon.${"win32"===os.platform()?"ico":"png"}`,frame:!1,show:!1,webPreferences:{contextIsolation:!1,nodeIntegration:!0}}),t.setApplicationMenu(null),updateWindow.setMenuBarVisibility(!1),updateWindow.loadFile(path.join(`${e.getAppPath()}/src/index.html`)),updateWindow.once("ready-to-show",()=>{updateWindow&&(dev&&updateWindow.webContents.openDevTools({mode:"detach"}),updateWindow.show())})}module.exports={getWindow,createWindow,destroyWindow};
+"use strict";
+const { app, BrowserWindow, Menu } = require("electron");
+const path = require("path");
+const os = require("os");
+let dev = process.env.DEV_TOOL === 'open';
+let updateWindow = undefined;
+
+function getWindow() {
+    return updateWindow;
+}
+
+function destroyWindow() {
+    if (!updateWindow) return;
+    updateWindow.close();
+    updateWindow = undefined;
+}
+
+function createWindow() {
+    destroyWindow();
+    updateWindow = new BrowserWindow({
+        title: "Mise à jour",
+        width: 400,
+        height: 500,
+        resizable: false,
+        icon: `./src/assets/images/icon.${os.platform() === "win32" ? "ico" : "png"}`,
+        frame: false,
+        show: false,
+        webPreferences: {
+            contextIsolation: false,
+            nodeIntegration: true
+        },
+    });
+    Menu.setApplicationMenu(null);
+    updateWindow.setMenuBarVisibility(false);
+    updateWindow.loadFile(path.join(`${app.getAppPath()}/src/index.html`));
+    updateWindow.once('ready-to-show', () => {
+        if (updateWindow) {
+            if (dev) updateWindow.webContents.openDevTools({ mode: 'detach' })
+            updateWindow.show();
+        }
+    });
+}
+
+module.exports = {
+    getWindow,
+    createWindow,
+    destroyWindow,
+};

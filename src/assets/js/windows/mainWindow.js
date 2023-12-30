@@ -1,1 +1,50 @@
-const{app:n,BrowserWindow:i,Menu:o}=require("electron"),path=require("path"),os=require("os"),pkg=require("../../../../package.json");let dev="open"===process.env.DEV_TOOL,mainWindow;function getWindow(){return mainWindow}function destroyWindow(){mainWindow&&(n.quit(),mainWindow=void 0)}function createWindow(){destroyWindow(),mainWindow=new i({title:pkg.preductname,width:1280,height:720,minWidth:980,minHeight:552,resizable:!0,icon:`./src/assets/images/icon.${"win32"===os.platform()?"ico":"png"}`,frame:"win32"!==os.platform(),show:!1,webPreferences:{contextIsolation:!1,nodeIntegration:!0}}),o.setApplicationMenu(null),mainWindow.setMenuBarVisibility(!1),mainWindow.loadFile(path.join(`${n.getAppPath()}/src/launcher.html`)),mainWindow.once("ready-to-show",()=>{mainWindow&&(dev&&mainWindow.webContents.openDevTools({mode:"detach"}),mainWindow.show())})}module.exports={getWindow,createWindow,destroyWindow};
+const { app, BrowserWindow, Menu } = require("electron");
+const path = require("path");
+const os = require("os");
+const pkg = require("../../../../package.json");
+let dev = process.env.DEV_TOOL === 'open';
+let mainWindow = undefined;
+
+function getWindow() {
+    return mainWindow;
+}
+
+function destroyWindow() {
+    if (!mainWindow) return;
+    app.quit();
+    mainWindow = undefined;
+}
+
+function createWindow() {
+    destroyWindow();
+    mainWindow = new BrowserWindow({
+        title: pkg.preductname,
+        width: 1280,
+        height: 720,
+        minWidth: 980,
+        minHeight: 552,
+        resizable: true,
+        icon: `./src/assets/images/icon.${os.platform() === "win32" ? "ico" : "png"}`,
+        frame: os.platform() !== 'win32',
+        show: false,
+        webPreferences: {
+            contextIsolation: false,
+            nodeIntegration: true
+        },
+    });
+    Menu.setApplicationMenu(null);
+    mainWindow.setMenuBarVisibility(false);
+    mainWindow.loadFile(path.join(`${app.getAppPath()}/src/launcher.html`));
+    mainWindow.once('ready-to-show', () => {
+        if (mainWindow) {
+            if (dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
+            mainWindow.show()
+        }
+    });
+}
+
+module.exports = {
+    getWindow,
+    createWindow,
+    destroyWindow,
+};

@@ -1,1 +1,319 @@
-import{changePanel as t,accountSelect as e,database as a,Slider as i,config as n,setStatus as c,popup as s,appdata as l,setBackground as r}from"../utils.js";let{ipcRenderer:o}=require("electron"),os=require("os");class Settings{static id="settings";async init(t){this.config=t,this.db=new a,this.navBTN(),this.accounts(),this.ram(),this.javaPath(),this.resolution(),this.launcher()}navBTN(){document.querySelector(".nav-box").addEventListener("click",e=>{if(e.target.classList.contains("nav-settings-btn")){let a=e.target.id,i=document.querySelector(".active-settings-BTN"),n=document.querySelector(".active-container-settings");if("save"==a)return i&&i.classList.toggle("active-settings-BTN"),document.querySelector("#account").classList.add("active-settings-BTN"),n&&n.classList.toggle("active-container-settings"),document.querySelector("#account-tab").classList.add("active-container-settings"),t("home");i&&i.classList.toggle("active-settings-BTN"),e.target.classList.add("active-settings-BTN"),n&&n.classList.toggle("active-container-settings"),document.querySelector(`#${a}-tab`).classList.add("active-container-settings")}})}accounts(){document.querySelector(".accounts-list").addEventListener("click",async a=>{let i=new s;try{let n=a.target.id;if(a.target.classList.contains("account")){if(i.openPopup({title:"Connexion",content:"Veuillez patienter...",color:"var(--color)"}),"add"==n)return document.querySelector(".cancel-home").style.display="inline",t("login");let c=await this.db.readData("accounts",n),l=await this.setInstance(c);return await e(c),l.account_selected=c.ID,await this.db.updateData("configClient",l)}if(a.target.classList.contains("delete-profile")){i.openPopup({title:"Connexion",content:"Veuillez patienter...",color:"var(--color)"}),await this.db.deleteData("accounts",n);let r=document.getElementById(`${n}`),o=document.querySelector(".accounts-list");if(o.removeChild(r),1==o.children.length)return t("login");if(configClient.account_selected==n){let d=await this.db.readAllData("accounts");configClient.account_selected=d[0].ID,e(d[0]);let u=await this.setInstance(d[0]);return configClient.instance_selct=u.instance_selct,await this.db.updateData("configClient",configClient)}}}catch(h){console.error(h)}finally{i.closePopup()}})}async setInstance(t){let e=await this.db.readData("configClient"),a=e.instance_selct,i=await n.getInstanceList();for(let s of i)if(s.whitelistActive&&s.whitelist.find(e=>e==t.name)!==t.name&&s.name==a){let l=i.find(t=>!1==t.whitelistActive);e.instance_selct=l.name,await c(l.status)}return e}async ram(){let t=await this.db.readData("configClient"),e=Math.trunc(os.totalmem()/1073741824*10)/10,a=Math.trunc(os.freemem()/1073741824*10)/10;document.getElementById("total-ram").textContent=`${e} Go`,document.getElementById("free-ram").textContent=`${a} Go`;document.querySelector(".memory-slider").setAttribute("max",Math.trunc(80*e/100));let n=t?.java_config?.java_memory?{ramMin:t.java_config.java_memory.min,ramMax:t.java_config.java_memory.max}:{ramMin:"1",ramMax:"2"};e<n.ramMin&&(t.java_config.java_memory={min:1,max:2},this.db.updateData("configClient",t),n={ramMin:"1",ramMax:"2"});let c=new i(".memory-slider",parseFloat(n.ramMin),parseFloat(n.ramMax)),s=document.querySelector(".slider-touch-left span"),l=document.querySelector(".slider-touch-right span");s.setAttribute("value",`${n.ramMin} Go`),l.setAttribute("value",`${n.ramMax} Go`),c.on("change",async(t,e)=>{let a=await this.db.readData("configClient");s.setAttribute("value",`${t} Go`),l.setAttribute("value",`${e} Go`),a.java_config.java_memory={min:t,max:e},this.db.updateData("configClient",a)})}async javaPath(){document.querySelector(".java-path-txt").textContent=`${await l()}/${"darwin"==process.platform?this.config.dataDirectory:`.${this.config.dataDirectory}`}/runtime`;let t=(await this.db.readData("configClient"))?.java_config?.java_path||"Utiliser la version de java livre avec le launcher",e=document.querySelector(".java-path-input-text"),a=document.querySelector(".java-path-input-file");e.value=t,document.querySelector(".java-path-set").addEventListener("click",async()=>{if(a.value="",a.click(),await new Promise(t=>{let e;e=setInterval(()=>{""!=a.value&&t(clearInterval(e))},100)}),a.value.replace(".exe","").endsWith("java")||a.value.replace(".exe","").endsWith("javaw")){let t=await this.db.readData("configClient"),i=a.files[0].path;e.value=i,t.java_config.java_path=i,await this.db.updateData("configClient",t)}else alert("Le nom du fichier doit \xeatre java ou javaw")}),document.querySelector(".java-path-reset").addEventListener("click",async()=>{let t=await this.db.readData("configClient");e.value="Utiliser la version de java livre avec le launcher",t.java_config.java_path=null,await this.db.updateData("configClient",t)})}async resolution(){let t=(await this.db.readData("configClient"))?.game_config?.screen_size||{width:1920,height:1080},e=document.querySelector(".width-size"),a=document.querySelector(".height-size"),i=document.querySelector(".size-reset");e.value=t.width,a.value=t.height,e.addEventListener("change",async()=>{let t=await this.db.readData("configClient");t.game_config.screen_size.width=e.value,await this.db.updateData("configClient",t)}),a.addEventListener("change",async()=>{let t=await this.db.readData("configClient");t.game_config.screen_size.height=a.value,await this.db.updateData("configClient",t)}),i.addEventListener("click",async()=>{let t=await this.db.readData("configClient");t.game_config.screen_size={width:"854",height:"480"},e.value="854",a.value="480",await this.db.updateData("configClient",t)})}async launcher(){let t=await this.db.readData("configClient"),e=t?.launcher_config?.download_multi||5,a=document.querySelector(".max-files"),i=document.querySelector(".max-files-reset");a.value=e,a.addEventListener("change",async()=>{let t=await this.db.readData("configClient");t.launcher_config.download_multi=a.value,await this.db.updateData("configClient",t)}),i.addEventListener("click",async()=>{let t=await this.db.readData("configClient");a.value=5,t.launcher_config.download_multi=5,await this.db.updateData("configClient",t)});let n=document.querySelector(".theme-box"),c=t?.launcher_config?.theme||"auto";"auto"==c?document.querySelector(".theme-btn-auto").classList.add("active-theme"):"dark"==c?document.querySelector(".theme-btn-sombre").classList.add("active-theme"):"light"==c&&document.querySelector(".theme-btn-clair").classList.add("active-theme"),n.addEventListener("click",async t=>{if(t.target.classList.contains("theme-btn")){let e=document.querySelector(".active-theme");if(t.target.classList.contains("active-theme"))return;e?.classList.remove("active-theme"),t.target.classList.contains("theme-btn-auto")?(r(),c="auto",t.target.classList.add("active-theme")):t.target.classList.contains("theme-btn-sombre")?(r(!0),c="dark",t.target.classList.add("active-theme")):t.target.classList.contains("theme-btn-clair")&&(r(!1),c="light",t.target.classList.add("active-theme"));let a=await this.db.readData("configClient");a.launcher_config.theme=c,await this.db.updateData("configClient",a)}});let s=document.querySelector(".close-box"),l=t?.launcher_config?.closeLauncher||"close-launcher";"close-launcher"==l?document.querySelector(".close-launcher").classList.add("active-close"):"close-all"==l?document.querySelector(".close-all").classList.add("active-close"):"close-none"==l&&document.querySelector(".close-none").classList.add("active-close"),s.addEventListener("click",async t=>{if(t.target.classList.contains("close-btn")){let e=document.querySelector(".active-close");if(t.target.classList.contains("active-close"))return;e?.classList.toggle("active-close");let a=await this.db.readData("configClient");t.target.classList.contains("close-launcher")?(t.target.classList.toggle("active-close"),a.launcher_config.closeLauncher="close-launcher",await this.db.updateData("configClient",a)):t.target.classList.contains("close-all")?(t.target.classList.toggle("active-close"),a.launcher_config.closeLauncher="close-all",await this.db.updateData("configClient",a)):t.target.classList.contains("close-none")&&(t.target.classList.toggle("active-close"),a.launcher_config.closeLauncher="close-none",await this.db.updateData("configClient",a))}})}}export default Settings;
+import { changePanel, accountSelect, database, Slider, config, setStatus, popup, appdata, setBackground } from '../utils.js'
+const { ipcRenderer } = require('electron');
+const os = require('os');
+
+class Settings {
+    static id = "settings";
+    async init(config) {
+        this.config = config;
+        this.db = new database();
+        this.navBTN()
+        this.accounts()
+        this.ram()
+        this.javaPath()
+        this.resolution()
+        this.launcher()
+    }
+
+    navBTN() {
+        document.querySelector('.nav-box').addEventListener('click', e => {
+            if (e.target.classList.contains('nav-settings-btn')) {
+                let id = e.target.id
+
+                let activeSettingsBTN = document.querySelector('.active-settings-BTN')
+                let activeContainerSettings = document.querySelector('.active-container-settings')
+
+                if (id == 'save') {
+                    if (activeSettingsBTN) activeSettingsBTN.classList.toggle('active-settings-BTN');
+                    document.querySelector('#account').classList.add('active-settings-BTN');
+
+                    if (activeContainerSettings) activeContainerSettings.classList.toggle('active-container-settings');
+                    document.querySelector(`#account-tab`).classList.add('active-container-settings');
+                    return changePanel('home')
+                }
+
+                if (activeSettingsBTN) activeSettingsBTN.classList.toggle('active-settings-BTN');
+                e.target.classList.add('active-settings-BTN');
+
+                if (activeContainerSettings) activeContainerSettings.classList.toggle('active-container-settings');
+                document.querySelector(`#${id}-tab`).classList.add('active-container-settings');
+            }
+        })
+    }
+
+    accounts() {
+        document.querySelector('.accounts-list').addEventListener('click', async e => {
+            let popupAccount = new popup()
+            try {
+                let id = e.target.id
+                if (e.target.classList.contains('account')) {
+                    popupAccount.openPopup({
+                        title: 'Connexion',
+                        content: 'Veuillez patienter...',
+                        color: 'var(--color)'
+                    })
+
+                    if (id == 'add') {
+                        document.querySelector('.cancel-home').style.display = 'inline'
+                        return changePanel('login')
+                    }
+
+                    let account = await this.db.readData('accounts', id);
+                    let configClient = await this.setInstance(account);
+                    await accountSelect(account);
+                    configClient.account_selected = account.ID;
+                    return await this.db.updateData('configClient', configClient);
+                }
+
+                if (e.target.classList.contains("delete-profile")) {
+                    popupAccount.openPopup({
+                        title: 'Connexion',
+                        content: 'Veuillez patienter...',
+                        color: 'var(--color)'
+                    })
+                    await this.db.deleteData('accounts', id);
+                    let deleteProfile = document.getElementById(`${id}`);
+                    let accountListElement = document.querySelector('.accounts-list');
+                    accountListElement.removeChild(deleteProfile);
+
+                    if (accountListElement.children.length == 1) return changePanel('login');
+                    if (configClient.account_selected == id) {
+                        let allAccounts = await this.db.readAllData('accounts');
+                        configClient.account_selected = allAccounts[0].ID
+                        accountSelect(allAccounts[0]);
+                        let newInstanceSelect = await this.setInstance(allAccounts[0]);
+                        configClient.instance_selct = newInstanceSelect.instance_selct
+                        return await this.db.updateData('configClient', configClient);
+                    }
+                }
+            } catch (err) {
+                console.error(err)
+            } finally {
+                popupAccount.closePopup();
+            }
+        })
+    }
+
+    async setInstance(auth) {
+        let configClient = await this.db.readData('configClient')
+        let instanceSelect = configClient.instance_selct
+        let instancesList = await config.getInstanceList()
+
+        for (let instance of instancesList) {
+            if (instance.whitelistActive) {
+                let whitelist = instance.whitelist.find(whitelist => whitelist == auth.name)
+                if (whitelist !== auth.name) {
+                    if (instance.name == instanceSelect) {
+                        let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
+                        configClient.instance_selct = newInstanceSelect.name
+                        await setStatus(newInstanceSelect.status)
+                    }
+                }
+            }
+        }
+        return configClient
+    }
+
+    async ram() {
+        let config = await this.db.readData('configClient');
+        let totalMem = Math.trunc(os.totalmem() / 1073741824 * 10) / 10;
+        let freeMem = Math.trunc(os.freemem() / 1073741824 * 10) / 10;
+
+        document.getElementById("total-ram").textContent = `${totalMem} Go`;
+        document.getElementById("free-ram").textContent = `${freeMem} Go`;
+
+        let sliderDiv = document.querySelector(".memory-slider");
+        sliderDiv.setAttribute("max", Math.trunc((80 * totalMem) / 100));
+
+        let ram = config?.java_config?.java_memory ? {
+            ramMin: config.java_config.java_memory.min,
+            ramMax: config.java_config.java_memory.max
+        } : { ramMin: "1", ramMax: "2" };
+
+        if (totalMem < ram.ramMin) {
+            config.java_config.java_memory = { min: 1, max: 2 };
+            this.db.updateData('configClient', config);
+            ram = { ramMin: "1", ramMax: "2" }
+        };
+
+        let slider = new Slider(".memory-slider", parseFloat(ram.ramMin), parseFloat(ram.ramMax));
+
+        let minSpan = document.querySelector(".slider-touch-left span");
+        let maxSpan = document.querySelector(".slider-touch-right span");
+
+        minSpan.setAttribute("value", `${ram.ramMin} Go`);
+        maxSpan.setAttribute("value", `${ram.ramMax} Go`);
+
+        slider.on("change", async (min, max) => {
+            let config = await this.db.readData('configClient');
+            minSpan.setAttribute("value", `${min} Go`);
+            maxSpan.setAttribute("value", `${max} Go`);
+            config.java_config.java_memory = { min: min, max: max };
+            this.db.updateData('configClient', config);
+        });
+    }
+
+    async javaPath() {
+        let javaPathText = document.querySelector(".java-path-txt")
+        javaPathText.textContent = `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}/runtime`;
+
+        let configClient = await this.db.readData('configClient')
+        let javaPath = configClient?.java_config?.java_path || 'Utiliser la version de java livre avec le launcher';
+        let javaPathInputTxt = document.querySelector(".java-path-input-text");
+        let javaPathInputFile = document.querySelector(".java-path-input-file");
+        javaPathInputTxt.value = javaPath;
+
+        document.querySelector(".java-path-set").addEventListener("click", async () => {
+            javaPathInputFile.value = '';
+            javaPathInputFile.click();
+            await new Promise((resolve) => {
+                let interval;
+                interval = setInterval(() => {
+                    if (javaPathInputFile.value != '') resolve(clearInterval(interval));
+                }, 100);
+            });
+
+            if (javaPathInputFile.value.replace(".exe", '').endsWith("java") || javaPathInputFile.value.replace(".exe", '').endsWith("javaw")) {
+                let configClient = await this.db.readData('configClient')
+                let file = javaPathInputFile.files[0].path;
+                javaPathInputTxt.value = file;
+                configClient.java_config.java_path = file
+                await this.db.updateData('configClient', configClient);
+            } else alert("Le nom du fichier doit être java ou javaw");
+        });
+
+        document.querySelector(".java-path-reset").addEventListener("click", async () => {
+            let configClient = await this.db.readData('configClient')
+            javaPathInputTxt.value = 'Utiliser la version de java livre avec le launcher';
+            configClient.java_config.java_path = null
+            await this.db.updateData('configClient', configClient);
+        });
+    }
+
+    async resolution() {
+        let configClient = await this.db.readData('configClient')
+        let resolution = configClient?.game_config?.screen_size || { width: 1920, height: 1080 };
+
+        let width = document.querySelector(".width-size");
+        let height = document.querySelector(".height-size");
+        let resolutionReset = document.querySelector(".size-reset");
+
+        width.value = resolution.width;
+        height.value = resolution.height;
+
+        width.addEventListener("change", async () => {
+            let configClient = await this.db.readData('configClient')
+            configClient.game_config.screen_size.width = width.value;
+            await this.db.updateData('configClient', configClient);
+        })
+
+        height.addEventListener("change", async () => {
+            let configClient = await this.db.readData('configClient')
+            configClient.game_config.screen_size.height = height.value;
+            await this.db.updateData('configClient', configClient);
+        })
+
+        resolutionReset.addEventListener("click", async () => {
+            let configClient = await this.db.readData('configClient')
+            configClient.game_config.screen_size = { width: '854', height: '480' };
+            width.value = '854';
+            height.value = '480';
+            await this.db.updateData('configClient', configClient);
+        })
+    }
+
+    async launcher() {
+        let configClient = await this.db.readData('configClient');
+
+        let maxDownloadFiles = configClient?.launcher_config?.download_multi || 5;
+        let maxDownloadFilesInput = document.querySelector(".max-files");
+        let maxDownloadFilesReset = document.querySelector(".max-files-reset");
+        maxDownloadFilesInput.value = maxDownloadFiles;
+
+        maxDownloadFilesInput.addEventListener("change", async () => {
+            let configClient = await this.db.readData('configClient')
+            configClient.launcher_config.download_multi = maxDownloadFilesInput.value;
+            await this.db.updateData('configClient', configClient);
+        })
+
+        maxDownloadFilesReset.addEventListener("click", async () => {
+            let configClient = await this.db.readData('configClient')
+            maxDownloadFilesInput.value = 5
+            configClient.launcher_config.download_multi = 5;
+            await this.db.updateData('configClient', configClient);
+        })
+
+        let themeBox = document.querySelector(".theme-box");
+        let theme = configClient?.launcher_config?.theme || "auto";
+
+        if (theme == "auto") {
+            document.querySelector('.theme-btn-auto').classList.add('active-theme');
+        } else if (theme == "dark") {
+            document.querySelector('.theme-btn-sombre').classList.add('active-theme');
+        } else if (theme == "light") {
+            document.querySelector('.theme-btn-clair').classList.add('active-theme');
+        }
+
+        themeBox.addEventListener("click", async e => {
+            if (e.target.classList.contains('theme-btn')) {
+                let activeTheme = document.querySelector('.active-theme');
+                if (e.target.classList.contains('active-theme')) return
+                activeTheme?.classList.remove('active-theme');
+
+                if (e.target.classList.contains('theme-btn-auto')) {
+                    setBackground();
+                    theme = "auto";
+                    e.target.classList.add('active-theme');
+                } else if (e.target.classList.contains('theme-btn-sombre')) {
+                    setBackground(true);
+                    theme = "dark";
+                    e.target.classList.add('active-theme');
+                } else if (e.target.classList.contains('theme-btn-clair')) {
+                    setBackground(false);
+                    theme = "light";
+                    e.target.classList.add('active-theme');
+                }
+
+                let configClient = await this.db.readData('configClient')
+                configClient.launcher_config.theme = theme;
+                await this.db.updateData('configClient', configClient);
+            }
+        })
+
+        let closeBox = document.querySelector(".close-box");
+        let closeLauncher = configClient?.launcher_config?.closeLauncher || "close-launcher";
+
+        if (closeLauncher == "close-launcher") {
+            document.querySelector('.close-launcher').classList.add('active-close');
+        } else if (closeLauncher == "close-all") {
+            document.querySelector('.close-all').classList.add('active-close');
+        } else if (closeLauncher == "close-none") {
+            document.querySelector('.close-none').classList.add('active-close');
+        }
+
+        closeBox.addEventListener("click", async e => {
+            if (e.target.classList.contains('close-btn')) {
+                let activeClose = document.querySelector('.active-close');
+                if (e.target.classList.contains('active-close')) return
+                activeClose?.classList.toggle('active-close');
+
+                let configClient = await this.db.readData('configClient')
+
+                if (e.target.classList.contains('close-launcher')) {
+                    e.target.classList.toggle('active-close');
+                    configClient.launcher_config.closeLauncher = "close-launcher";
+                    await this.db.updateData('configClient', configClient);
+                } else if (e.target.classList.contains('close-all')) {
+                    e.target.classList.toggle('active-close');
+                    configClient.launcher_config.closeLauncher = "close-all";
+                    await this.db.updateData('configClient', configClient);
+                } else if (e.target.classList.contains('close-none')) {
+                    e.target.classList.toggle('active-close');
+                    configClient.launcher_config.closeLauncher = "close-none";
+                    await this.db.updateData('configClient', configClient);
+                }
+            }
+        })
+    }
+}
+export default Settings;

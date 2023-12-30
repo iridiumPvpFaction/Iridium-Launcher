@@ -1,1 +1,35 @@
-let console_log=console.log,console_info=console.info,console_warn=console.warn,console_debug=console.debug,console_error=console.error;class logger{constructor(o,l){this.Logger(o,l)}async Logger(o,l){console.log=c=>{console_log.call(console,`%c[${o}]:`,`color: ${l};`,c)},console.info=c=>{console_info.call(console,`%c[${o}]:`,`color: ${l};`,c)},console.warn=c=>{console_warn.call(console,`%c[${o}]:`,`color: ${l};`,c)},console.debug=c=>{console_debug.call(console,`%c[${o}]:`,`color: ${l};`,c)},console.error=c=>{console_error.call(console,`%c[${o}]:`,`color: ${l};`,c)}}}export default logger;
+let console_log = console.log;
+let console_info = console.info;
+let console_warn = console.warn;
+let console_debug = console.debug;
+let console_error = console.error;
+
+class logger {
+    constructor(name, color) {
+        this.Logger(name, color)
+    }
+
+    async Logger(name, color) {
+        console.log = value => {
+            console_log.call(console, `%c[${name}]:`, `color: ${color};`, value);
+        };
+
+        console.info = value => {
+            console_info.call(console, `%c[${name}]:`, `color: ${color};`, value);
+        };
+
+        console.warn = value => {
+            console_warn.call(console, `%c[${name}]:`, `color: ${color};`, value);
+        };
+
+        console.debug = value => {
+            console_debug.call(console, `%c[${name}]:`, `color: ${color};`, value);
+        };
+
+        console.error = value => {
+            console_error.call(console, `%c[${name}]:`, `color: ${color};`, value);
+        };
+    }
+}
+
+export default logger;
